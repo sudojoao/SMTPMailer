@@ -15,15 +15,7 @@ A lightweight, dependency-free PHP SMTP mail sender that allows you to send emai
 
 ## Quick Start
 
-1. Download `smtpmail.php` and `config.php`
-2. Configure your SMTP settings in `config.php`:
-```php
-define('SMTP_EMAIL', 'your-email@gmail.com');
-define('SMTP_PASSWORD', 'your-app-specific-password');
-define('SMTP_NAME', 'Your Name');
-```
-
-3. Import and use in your project:
+1 Import and use in your project:
 ```php
 require_once 'smtpmail.php';
 
@@ -31,6 +23,12 @@ $mailer = new SMTPMail();
 $mailer->createSimpleLetter('Subject', 'Email body', 'html');
 $mailer->setRecipient('recipient@example.com', 'Recipient Name');
 $mailer->sendLetter();
+```
+2. Configure your SMTP settings in `config.php`:
+```php
+define('SMTP_EMAIL', 'your-email@gmail.com');
+define('SMTP_PASSWORD', 'your-app-specific-password');
+define('SMTP_NAME', 'Your Name');
 ```
 
 ## Configuration
