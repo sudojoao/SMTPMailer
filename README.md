@@ -15,7 +15,7 @@ A lightweight, dependency-free PHP SMTP mail sender that allows you to send emai
 
 ## Quick Start
 
-1 Import and use in your project:
+1. Import and use in your project:
 ```php
 require_once 'smtpmail.php';
 
