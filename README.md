@@ -8,6 +8,7 @@ A lightweight, dependency-free PHP SMTP mail sender that allows you to send emai
 
 - 🔌 No external dependencies required
 - 📧 Supports both plain text and HTML emails
+- 🔗 Annex Files and Documents
 - 🔒 TLS encryption support
 - 🔑 SMTP authentication
 - 📝 UTF-8 character encoding
