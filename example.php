@@ -1,35 +1,42 @@
 <?php
+require_once('smtpmail.php');
+$mailer = new SMTPMail();
 
-require_once("smtpmail.php");
-
-$recipients = array(
-    array('email' => 'example@mail.eu', 'name' => 'Recipient 1'),
-    // Add as needed
-);
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $smtp = new SMTPMail();
-    $smtp->setDebugPrint(true);
+function sendSimpleEmailWithAttachment() {
+    global $mailer;
     
-    foreach ($recipients as $recipient) {
-        $smtp->setRecipient($recipient['email'], $recipient['name']);
+    $mailer->clearRecipients();
+    $mailer->clearAttachments();
+    
+    $subject = "Your Invoice #12345";
+    $body = "<h2>Invoice Attached</h2>
+            <p>Dear Customer,</p>
+            <p>Thank you for your recent purchase. Please find your invoice attached to this email.</p>
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p>Best regards,<br>Your Company</p>";
+    
+    $mailer->createSimpleLetter($subject, $body, 'html');
+    $mailer->setRecipient("example@example.com", "Customer Name");
+    
+    $mailer->addAttachment("pdf\example.pdf");
+    
+    if($mailer->sendLetter()) {
+        return "Invoice email sent successfully!";
+    } else {
+        return "Failed to send invoice email.";
     }
-    
-    $smtp->createSimpleLetter(
-        "Hope you enjoy this test email!", 
-        "This is a test email sent from the PHP SMTP Mail Sender! <h1>Test</h1>", 
-        "html"
-    );
-    
-    $result = $smtp->sendLetter();
-    $message = $result ? "Email sent successfully!" : "Failed to send email.";
+}
+
+$mail = '';
+if(isset($_POST['send_email'])) {
+    $mail = sendSimpleEmailWithAttachment();
 }
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SMTPMailer</title>
+    <title>Email Test</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 4px;
         }
         .message {
-            margin: 20px 0;
+            margin-top: 20px;
             padding: 10px;
             border-radius: 4px;
         }
@@ -66,17 +73,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-    <h1>SMTPMailer</h1>
-    
-    <?php if (isset($message)): ?>
-        <div class="message <?php echo $result ? 'success' : 'error'; ?>">
-            <?php echo $message; ?>
+    <h1>SMTP-MAILER Test Page</h1>
+    <form method="POST">
+        <button type="submit" name="send_email" class="button">Send Test Email</button>
+    </form>
+    <?php if($mail): ?>
+        <div class="message <?php echo strpos($mail, 'successfully') !== false ? 'success' : 'error'; ?>">
+            <?php echo htmlspecialchars($mail); ?>
         </div>
     <?php endif; ?>
-
-    <form method="POST">
-        <button type="submit" class="button">Send Email</button>
-    </form>
 </body>
 </html>
-

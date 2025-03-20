@@ -34,10 +34,12 @@ class SMTPMail
 {
     private $config = array();
     private $recipients = array(); 
+    private $attachments = array();
 
     private $letterSubject = "";
     private $letterBody = "";
     private $server_response = "";
+    private $boundary = "";
 
     public function __construct()
     {
@@ -45,6 +47,7 @@ class SMTPMail
         $this->config['smtp_debug']    = false;
         $this->config['smtp_type']     = "plain";
         $this->config['smtp_charset']  = 'UTF-8';
+        $this->boundary = md5(uniqid(time()));
     }
 
     private function mEncode($string)
@@ -154,12 +157,82 @@ class SMTPMail
         $this->recipients = array();
     }
 
+    /**
+     * @param string 
+     * @param string 
+     * @return bool 
+     */
+    public function addAttachment($filePath, $fileName = '')
+    {
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            if($this->config['smtp_debug'])
+                echo "ERROR: File not found or not readable: $filePath\n";
+            return false;
+        }
+
+        $attachment = array(
+            'path' => $filePath,
+            'name' => $fileName ?: basename($filePath),
+            'content' => file_get_contents($filePath),
+            'type' => $this->getMimeType($filePath)
+        );
+
+        $this->attachments[] = $attachment;
+        return true;
+    }
+
+
+    public function clearAttachments()
+    {
+        $this->attachments = array();
+    }
+
+    /**
+     * @param string 
+     * @return string 
+     */
+    private function getMimeType($filePath)
+    {
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $filePath);
+            finfo_close($finfo);
+            return $mimeType;
+        }
+
+        if (function_exists('mime_content_type')) {
+            return mime_content_type($filePath);
+        }
+
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $mimeTypes = array(
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'pdf' => 'application/pdf',
+            'txt' => 'text/plain',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'zip' => 'application/zip',
+            'csv' => 'text/csv',
+            'html' => 'text/html',
+            'xml' => 'application/xml',
+            'json' => 'application/json',
+        );
+
+        return isset($mimeTypes[$ext]) ? $mimeTypes[$ext] : 'application/octet-stream';
+    }
+
     public function sendLetter()
     {
         $this->server_response = "";
-        $SEND    =  "";
-        $SEND   .=  "Date: " . date("D, d M Y H:i:s O") . "\r\n";
-        $SEND   .=  "Subject: " . $this->mEncode($this->letterSubject) . "\r\n";
+        $hasAttachments = !empty($this->attachments);
+        
+        $SEND = "Date: " . date("D, d M Y H:i:s O") . "\r\n";
+        $SEND .= "Subject: " . $this->mEncode($this->letterSubject) . "\r\n";
         
         $toHeader = "";
         foreach ($this->recipients as $recipient) {
@@ -167,17 +240,35 @@ class SMTPMail
         }
         $toHeader = rtrim($toHeader, ", ");
 
-        $SEND   .=
-                    "MIME-Version: 1.0\r\n" .
-                    "Content-Type: text/" . $this->config['smtp_type'] . "; charset=\"" . $this->config['smtp_charset'] . "\"\r\n" .
-                    "Content-Transfer-Encoding: 8bit\r\n" .
-                    "From: " .      $this->mEncode($this->config['smtp_namefrom']) .   " <" . $this->config['smtp_from']. ">\r\n" .
-                    "To: " . $toHeader . "\r\n" .
-                    "X-Mailer: Wohlstand's PHP SMTP Mail script v2.0\r\n" .
-                    "X-Priority: 3\r\n" .
-                    "\r\n\r\n";
+        $SEND .= "MIME-Version: 1.0\r\n";
+        $SEND .= "From: " . $this->mEncode($this->config['smtp_namefrom']) . " <" . $this->config['smtp_from'] . ">\r\n";
+        $SEND .= "To: " . $toHeader . "\r\n";
+        $SEND .= "X-Mailer: Wohlstand's PHP SMTP Mail script v2.0\r\n";
+        $SEND .= "X-Priority: 3\r\n";
+        
+        if ($hasAttachments) {
+            $SEND .= "Content-Type: multipart/mixed; boundary=\"" . $this->boundary . "\"\r\n\r\n";
+            $SEND .= "This is a multi-part message in MIME format.\r\n";
+            $SEND .= "--" . $this->boundary . "\r\n";
+            $SEND .= "Content-Type: text/" . $this->config['smtp_type'] . "; charset=\"" . $this->config['smtp_charset'] . "\"\r\n";
+            $SEND .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+            $SEND .= $this->letterBody . "\r\n\r\n";
+            
 
-        $SEND .=  $this->letterBody. "\r\n";
+            foreach ($this->attachments as $attachment) {
+                $SEND .= "--" . $this->boundary . "\r\n";
+                $SEND .= "Content-Type: " . $attachment['type'] . "; name=\"" . $attachment['name'] . "\"\r\n";
+                $SEND .= "Content-Transfer-Encoding: base64\r\n";
+                $SEND .= "Content-Disposition: attachment; filename=\"" . $attachment['name'] . "\"\r\n\r\n";
+                $SEND .= chunk_split(base64_encode($attachment['content'])) . "\r\n";
+            }
+            
+            $SEND .= "--" . $this->boundary . "--\r\n";
+        } else {
+            $SEND .= "Content-Type: text/" . $this->config['smtp_type'] . "; charset=\"" . $this->config['smtp_charset'] . "\"\r\n";
+            $SEND .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+            $SEND .= $this->letterBody . "\r\n";
+        }
 
         if(($socket = fsockopen($this->config['smtp_host'], $this->config['smtp_port'], $errno, $errstr, 10)) == NULL )
         {
