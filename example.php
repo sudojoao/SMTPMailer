@@ -17,9 +17,9 @@ function sendSimpleEmailWithAttachment() {
     
     $mailer->createSimpleLetter($subject, $body, 'html');
     $mailer->setRecipient("example@example.com", "Customer Name");
-    
+    //Add more Recipients as needed
     $mailer->addAttachment("pdf\example.pdf");
-    
+    //Add more attachments if need
     if($mailer->sendLetter()) {
         return "Invoice email sent successfully!";
     } else {
