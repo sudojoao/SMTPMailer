@@ -1,4 +1,4 @@
-# SMTPMailer   / *No libraries No composer only a script!*
+# SMTPMailer   / *No libraries or composer*
 
 A lightweight, dependency-free completely self contained PHP SMTP mail sender that allows you to send emails without requiring any external libraries or Composer. Perfect for simple PHP projects that need email functionality without the overhead of large email libraries.
 
@@ -6,15 +6,15 @@ A lightweight, dependency-free completely self contained PHP SMTP mail sender th
 
 ## Features
 
-- 🔌 No external dependencies required
-- 📧 Supports both plain text and HTML emails
-- 🔗 Annex Files and Documents
-- 🔒 TLS encryption support
-- 🔑 SMTP authentication
-- 📝 UTF-8 character encoding
-- 🔍 Optional debug mode
-- 📨 Multiple recipient support
-- ⚡ Lightweight and easy to integrate
+- No external dependencies required
+- Supports both plain text and HTML emails
+- Annex Files and Documents
+- TLS encryption support
+- SMTP authentication
+- UTF-8 character encoding
+- Optional debug mode
+- Multiple recipient support
+- Lightweight and easy to integrate
 
 ## Quick Start
 
